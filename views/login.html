@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Login | Symfon</title>
+        <style>
+            body {
+                background-color: black;
+            }
+        </style>
+        <script>
+            window.onload = function() {
+                if (localStorage.getItem("access-token")) {
+                    window.location.href = "/dashboard";
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div>
+            <form id="loginForm">
+                <input type="text" placeholder="Username" name="username"/>
+                <input type="password" placeholder="Password" name="password"/>
+            </form>
+            <button onclick="handleLogin()">Login</button>
+        </div>
+        <script>
+            function handleLogin() {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/login");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onload = function(event) {
+                    const resp = JSON.parse(xhr.response);
+                    if (resp.error) {
+                        alert("Invalid username or password");
+                    }
+                    localStorage.setItem("access-token", resp.access_token);
+                    window.location.href = "/dashboard";
+                };
+                const data = JSON.stringify({
+                    username: document.getElementsByName("username")[0].value,
+                    password: document.getElementsByName("password")[0].value
+                }); 
+                xhr.send(data);
+            }
+        </script>
+    </body>
+</html>

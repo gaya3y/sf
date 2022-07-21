@@ -1,9 +1,40 @@
 <!DOCTYPE html>
 <html>
     <head>
-
+        <title>Symfon</title>
+        <style>
+            body {
+                background-image: url("/images/back-1080.webp");
+                color: white;
+            }
+            h1 {
+                font-size: 150px;
+                text-align: center;
+            }
+            #actions {
+                text-align: center;
+                font-size: 40px;
+            }
+            #actions a, #actions a:visited, #actions a:link {
+                color: white;
+                padding: 50px;
+                text-decoration: none;
+            }
+        </style>
+        <script>
+            window.onload = function() {
+                if (localStorage.getItem("access-token")) {
+                    window.location.href = "/dashboard";
+                }
+            }
+        </script>
     </head>
     <body>
-        <h1>Hello</h1>
+        <h1>SYMFON</h1>
+        <div id="actions">
+            <a href="/login">Login</a>
+            <a href="#">|</a>
+            <a href="/register">Register</a>
+        </div>
     </body>
 </html>
