@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <link rel="stylesheet" href="/css/style.css"/>
         <script>
             window.onload = function() {
                 if (!localStorage.getItem("access-token")) {
@@ -8,8 +9,193 @@
                 }
             }
         </script>
+        <style>
+            body {
+                background-color: black;
+                color: white;
+            }
+            #musicPlayer {
+                background-color: black;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+            }
+            #musicPlayer audio {
+                width: 100%;
+            }
+            #search {
+                top: 0;
+                left: 0;
+                background-color: blueviolet;
+                position: fixed;
+                width: 100%;
+                padding: 20px;
+            }
+            #body {
+                margin-top: 100px;
+                margin-bottom: 100px;
+            }
+            .songList {
+                display: flex;
+                flex-direction: column;
+            }
+            .songRow {
+                display: flex;
+                flex-direction: row;
+                padding: 10px;
+            }
+            .songTile:hover {
+                background-color: rgb(14, 14, 14);
+                opacity: 0.5;
+            }
+            .songTile {
+                flex: 1;
+                cursor: pointer;
+                display: flex;
+                flex-direction: row;
+                padding: 10px;
+            }
+            .songTileImage {
+                flex: 1;
+                padding: 5px;
+            }
+            .songTileBody {
+                flex: 4;
+                line-height: 80%;
+            }
+        </style>
     </head>
     <body>
-        
+        <div id="search">
+            <input type="text" placeholder="Search songs..." id="searchBar"/>
+            <button onclick="search()" type="button">Search</button>
+        </div>
+        <div id="body">
+            <div id="searchResults" class="hidden songList">
+                <h2>Results</h2>
+            </div>
+            <div id="defaultState">
+                <h2>Favourites</h2>
+                <div id="favourites">
+                    
+                </div>
+                <h2>Suggestions</h2>
+                <div id="newSongs" class="songList">
+
+                </div>
+                <div id="newPeople" class="songList">
+
+                </div>
+            </div>
+        </div>
+        <div id="musicPlayer">
+            <audio controls>
+                
+            </audio>
+        </div>
+        <script>
+            window.onload = function() {
+                requestRecommendedSongs()
+                requestRecommendedUsers()
+            }
+            
+            function requestRecommendedUsers() {
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", "/users/recommendations");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("access-token"));
+                xhr.onload = function(event) {
+                    const resp = JSON.parse(xhr.response);
+                    if (resp.error) {
+                        alert("Error: " + resp.error);
+                    } else {
+                        for (const user of resp) {
+                            // buildSongTileHorizontal(song, document.getElementById("newUsers"));
+                        }
+                    }
+                };
+                xhr.send();
+            }
+
+            function requestRecommendedSongs() {
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", "/songs/recommendations");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("access-token"));
+                xhr.onload = function(event) {
+                    const resp = JSON.parse(xhr.response);
+                    if (resp.error) {
+                        alert("Error: " + resp.error);
+                    } else {
+                        buildSongsList(resp.map((recommendation) => recommendation.song), document.getElementById("newSongs"));
+                    }
+                };
+                xhr.send();
+            }
+
+            function buildSongsList(songData, parent) {
+                const rowCount = 5;
+                var currentCount = 0;
+                var newRow = null;
+                for (const song of songData) {
+                    if (currentCount % rowCount == 0) {
+                        if (newRow != null) {
+                            parent.appendChild(newRow);
+                        }
+                        newRow = document.createElement("div");
+                        newRow.classList.add("songRow");
+                    }
+                    buildSongTile(song, newRow);
+                    currentCount += 1;
+                }
+                if (newRow != null) {
+                    parent.appendChild(newRow);
+                }
+            }
+
+            function playSong(url) {
+                const audio = document.querySelector("audio");
+                audio.pause();
+                audio.currentTime = 0;
+                audio.innerHTML = "<source src=\"" + url + "\" type=\"audio/mpeg\">";
+                audio.play();
+            }
+
+            function buildSongTile(songData, parent) {
+                const songTile = document.createElement("div");
+                songTile.classList.add("songTile");
+                songTile.onclick = function() {
+                    playSong(songData.url);
+                }
+                songTile.innerHTML = `
+                    <div class="songTileImage">
+                        <img src="${songData.image}" alt="${songData.name}"/>
+                    </div>
+                    <div class="songTileBody">
+                        <p>${songData.name}</p>
+                        <p>${songData.artists}</p>
+                    </div>
+                `;
+                parent.appendChild(songTile);
+            }
+
+            function toggleSearchState() {
+                document.getElementById("searchResults").classList.remove("hidden");
+                document.getElementById("defaultState").classList.add("hidden");
+            }
+
+            function search() {
+                const name = document.getElementById("searchBar").value;
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", "/search?q=" + name);
+                xhr.onload = function(event) {
+                    const resp = JSON.parse(xhr.response);
+                    buildSongsList(resp, document.getElementById("searchResults"));
+                    toggleSearchState();
+                };
+                xhr.send()
+            }
+        </script>
     </body>
 </html>

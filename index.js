@@ -23,6 +23,32 @@ app.get('/dashboard', (req, res) => {
   res.sendFile("views/dashboard.html", {"root": __dirname})
 })
 
+app.get('/search', async (req, res) => {
+  res.send(await(await fetch(`${API_BASE}/songs?q=` + req.query.q, {
+    method: 'GET'
+  })).text());
+})
+
+app.get('/songs/recommendations', async (req, res) => {
+  res.send(await(await fetch(`${API_BASE}/songs/recommendations`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': req.headers.authorization
+    }
+  })).text())
+})
+
+app.get('/users/recommendations', async (req, res) => {
+  res.send(await(await fetch(`${API_BASE}/users/recommendations`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': req.headers.authorization
+    }
+  })).text())
+})
+
 app.get('/login', (req, res) => {
   res.sendFile("views/login.html", {"root": __dirname})
 })
