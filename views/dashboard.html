@@ -64,6 +64,31 @@
                 flex: 4;
                 line-height: 80%;
             }
+            #searchResultHeader {
+                text-align: center;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            #searchResultHeader h2 {
+                flex: 1;
+            }
+            .deactiveBtn {
+                opacity: 0.4;
+                cursor: pointer;
+            }
+            #header {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                justify-content: space-between;
+                text-align: center;
+            }
+
+            #header h2 {
+                flex: 1;
+            }
         </style>
     </head>
     <body>
@@ -72,15 +97,22 @@
             <button onclick="search()" type="button">Search</button>
         </div>
         <div id="body">
+            <div id="header">
+                <h2 id="headerHome">Home</h2>
+                <h2 id="headerUser" class="deactiveBtn" onclick="viewUserState()">Users</h2>
+            </div>
             <div id="searchResults" class="hidden songList">
-                <h2>Results</h2>
+                <div id="searchResultHeader">
+                    <h2 class="deactiveBtn" onclick="deactivateSearchState()">Home</h2>
+                    <h2>Results</h2>
+                    <h2 class="deactiveBtn">Users</h2>
+                </div>
+            </div>
+            <div id="userState">
+                
             </div>
             <div id="defaultState">
-                <h2>Favourites</h2>
-                <div id="favourites">
-                    
-                </div>
-                <h2>Suggestions</h2>
+                <h2>Explore new songs</h2>
                 <div id="newSongs" class="songList">
 
                 </div>
@@ -96,8 +128,8 @@
         </div>
         <script>
             window.onload = function() {
-                requestRecommendedSongs()
-                requestRecommendedUsers()
+                requestRecommendedSongs();
+                requestRecommendedUsers();
             }
             
             function requestRecommendedUsers() {
@@ -150,6 +182,12 @@
                     currentCount += 1;
                 }
                 if (newRow != null) {
+                    while(currentCount % rowCount != 0) {
+                        x = document.createElement("div")
+                        x.classList.add("songTile");
+                        newRow.appendChild(x);
+                        currentCount += 1;
+                    }
                     parent.appendChild(newRow);
                 }
             }
@@ -180,9 +218,14 @@
                 parent.appendChild(songTile);
             }
 
-            function toggleSearchState() {
+            function activateSearchState() {
                 document.getElementById("searchResults").classList.remove("hidden");
                 document.getElementById("defaultState").classList.add("hidden");
+            }
+
+            function deactivateSearchState() {
+                document.getElementById("searchResults").classList.add("hidden");
+                document.getElementById("defaultState").classList.remove("hidden");
             }
 
             function search() {
@@ -192,9 +235,24 @@
                 xhr.onload = function(event) {
                     const resp = JSON.parse(xhr.response);
                     buildSongsList(resp, document.getElementById("searchResults"));
-                    toggleSearchState();
+                    activateSearchState();
                 };
                 xhr.send()
+            }
+
+            function viewUserState() {
+                document.getElementById("userState").classList.remove("hidden");
+                document.getElementById("defaultState").classList.add("hidden");
+                document.getElementById("headerHome").classList.add("deactiveBtn");
+                document.getElementById("headerUser").classList.remove("deactiveBtn");
+                document.getElementById("headerHome").onclick = () => viewDefaultState();
+            }
+
+            function viewDefaultState() {
+                document.getElementById("userState").classList.add("hidden");
+                document.getElementById("defaultState").classList.remove("hidden");
+                document.getElementById("headerHome").classList.remove("deactiveBtn");
+                document.getElementById("headerUser").classList.add("deactiveBtn");
             }
         </script>
     </body>
