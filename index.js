@@ -95,7 +95,7 @@ app.get('/login', (req, res) => {
 })
 
 app.post('/login', async (req, res) => {
-  const serverResp = await fetch(API_BASE + "/users/login", {
+  const serverResp = await fetch(`${API_BASE}/users/login`, {
     method: "POST",
     headers:{
       'Content-Type': 'application/x-www-form-urlencoded'
@@ -113,7 +113,7 @@ app.post('/login', async (req, res) => {
 })
 
 app.get("/me", async (req, res) => {
-  const serverResp = await fetch(API_BASE + "/users/me", {
+  const serverResp = await fetch(`${API_BASE}/users/me`, {
     method: "GET",
     headers: req.headers
   });
@@ -125,7 +125,7 @@ app.get("/me", async (req, res) => {
 })
 
 app.post("/connect", async (req, res) => {
-  fetch(API_BASE + `/users/connect/${req.body.user_id}`, {
+  fetch(`${API_BASE}/users/connect/${req.body.user_id}`, {
     method: "POST",
     headers: req.headers
   }).then(async resp => {
@@ -138,7 +138,7 @@ app.post("/connect", async (req, res) => {
 })
 
 app.delete("/connect", async (req, res) => {
-  const serverResp = await fetch(API_BASE + `/users/connect/${req.body.user_id}`, {
+  const serverResp = await fetch(`${API_BASE}/users/connect/${req.body.user_id}`, {
     method: "DELETE",
     headers: req.headers
   })
