@@ -2,13 +2,6 @@
 <html>
     <head>
         <link rel="stylesheet" href="/css/style.css"/>
-        <script>
-            window.onload = function() {
-                if (!localStorage.getItem("access-token")) {
-                    window.location.href = "/";
-                }
-            }
-        </script>
         <style>
             body {
                 background-color: black;
@@ -31,21 +24,27 @@
                 position: fixed;
                 width: 100%;
                 padding: 20px;
+                text-align: center;
             }
             #body {
                 margin-top: 100px;
                 margin-bottom: 100px;
             }
-            .songList {
+            .songList, .userList {
                 display: flex;
                 flex-direction: column;
             }
-            .songRow {
+            .songRow, .userRow {
                 display: flex;
                 flex-direction: row;
                 padding: 10px;
             }
-            .songTile:hover {
+            .userTile button {
+                width: 100%;
+                padding: 10px;
+                cursor: pointer;
+            }
+            .songTile:hover{
                 background-color: rgb(14, 14, 14);
                 opacity: 0.5;
             }
@@ -56,11 +55,23 @@
                 flex-direction: row;
                 padding: 10px;
             }
-            .songTileImage {
+            .userTile {
+                flex: 1;
+                cursor: pointer;
+                flex-direction: column;
+                display: flex;
+                padding: 10px;
+                text-align: center;
+            }
+            .userTileImage img {
+                width: 128px;
+                height: 128px;
+            }
+            .songTileImage, .userTileImage {
                 flex: 1;
                 padding: 5px;
             }
-            .songTileBody {
+            .songTileBody, .userTileBody {
                 flex: 4;
                 line-height: 80%;
             }
@@ -98,27 +109,26 @@
         </div>
         <div id="body">
             <div id="header">
-                <h2 id="headerHome">Home</h2>
+                <h2 id="headerHome" onclick="viewDefacultState()">Home</h2>
+                <h2 id="headerResults" class="deactiveBtn hidden">Results</h2>
                 <h2 id="headerUser" class="deactiveBtn" onclick="viewUserState()">Users</h2>
             </div>
             <div id="searchResults" class="hidden songList">
-                <div id="searchResultHeader">
-                    <h2 class="deactiveBtn" onclick="deactivateSearchState()">Home</h2>
-                    <h2>Results</h2>
-                    <h2 class="deactiveBtn">Users</h2>
-                </div>
+
             </div>
             <div id="userState">
-                
+                <h2>Your Circle</h2>
+                <div id="connectedUsers" class="userList"></div>
+                <h2>Followers</h2>
+                <div id="followers" class="userList"></div>
+                <h2>Recommended Connections</h2>
+                <div id="recommendedUsers" class="userList"></div>
             </div>
             <div id="defaultState">
+                <h2>Your favourites</h2>
+                <div id="favSongs" class="songList"></div>
                 <h2>Explore new songs</h2>
-                <div id="newSongs" class="songList">
-
-                </div>
-                <div id="newPeople" class="songList">
-
-                </div>
+                <div id="newSongs" class="songList"></div>
             </div>
         </div>
         <div id="musicPlayer">
@@ -127,12 +137,64 @@
             </audio>
         </div>
         <script>
+            let currentUser = null;
+            let currentSong = null;
+            let songLock = false;
             window.onload = function() {
+                if (!localStorage.getItem("access-token")) {
+                    window.location.href = "/";
+                }
+                requestUser();
+                viewDefaultState();
                 requestRecommendedSongs();
-                requestRecommendedUsers();
+                requestFavouriteSongs();
+                const audio = document.querySelector("audio");
+                audio.onplay = function() {
+                    setTimeout(function() {
+                        requestStartSong();
+                    }, 1000);
+                }
+                audio.onpause = function() {
+                    requestEndSong(currentSong.historyId);
+                }
+            }
+
+            window.addEventListener("beforeunload", function() {
+                if (currentSong !== null) {
+                    requestEndSong(currentSong.historyId);
+                }
+            })
+
+            function requestUser() {
+                fetch("/me", {
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("access-token")
+                    }
+                }).then(async (response) => {
+                    if (response.status == 200) {
+                        currentUser = await response.json();
+                        document.getElementById("connectedUsers").innerHTML = "";
+                        document.getElementById("followers").innerHTML = "";
+                        if (currentUser.following.length == 0) {
+                            document.getElementById("connectedUsers").innerHTML = "No connections yet"
+                        } else {
+                            buildUserTiles(currentUser.following, document.getElementById("connectedUsers"), true);
+                        }
+                        if (currentUser.followers.length ==0) {
+                            document.getElementById("followers").innerHTML = "No followers yet" 
+                        } else {
+                            buildUserTiles(currentUser.followers, document.getElementById("followers"), false);
+                        }
+                        requestRecommendedUsers();
+                        
+                    } else {
+                        alert("Error");
+                    }
+                });
             }
             
             function requestRecommendedUsers() {
+                document.getElementById("recommendedUsers").innerHTML = "";
                 const xhr = new XMLHttpRequest();
                 xhr.open("GET", "/users/recommendations");
                 xhr.setRequestHeader("Content-Type", "application/json");
@@ -142,8 +204,11 @@
                     if (resp.error) {
                         alert("Error: " + resp.error);
                     } else {
-                        for (const user of resp) {
-                            // buildSongTileHorizontal(song, document.getElementById("newUsers"));
+                        console.log(resp.length);
+                        if (resp.length === 0) {
+                            document.getElementById("recommendedUsers").innerHTML = "No recommendations yet";
+                        } else {
+                            buildUserTiles(resp.map(x => x.user), document.getElementById("recommendedUsers"), false);
                         }
                     }
                 };
@@ -160,10 +225,32 @@
                     if (resp.error) {
                         alert("Error: " + resp.error);
                     } else {
-                        buildSongsList(resp.map((recommendation) => recommendation.song), document.getElementById("newSongs"));
+                        if (resp.length === 0) {
+                            document.getElementById("newSongs").innerHTML = "No recommendations yet";
+                        } else {
+                            buildSongsList(resp.map((recommendation) => recommendation.song), document.getElementById("newSongs"));
+                        }
+                        
                     }
                 };
                 xhr.send();
+            }
+
+            function requestFavouriteSongs() {
+                fetch("/songs/favorite", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + localStorage.getItem("access-token")
+                    }
+                }).then(async (response) => {
+                    if (response.status == 200) {
+                        const songs = await response.json();
+                        buildSongsList(songs, document.getElementById("favSongs"));
+                    } else {
+                        alert("Error");
+                    }
+                });
             }
 
             function buildSongsList(songData, parent) {
@@ -192,19 +279,62 @@
                 }
             }
 
-            function playSong(url) {
+            function playSong(song) {
                 const audio = document.querySelector("audio");
                 audio.pause();
+                if (currentSong !== null) {
+                        songLock = true;
+                    setTimeout(() => {
+                        currentSong = {"id": song.id}
+                        songLock = false;
+                        console.log("FAHI");
+                    }, 1000);
+                } else {
+                    songLock = false;
+                    currentSong = {"id": song.id}
+                }
                 audio.currentTime = 0;
-                audio.innerHTML = "<source src=\"" + url + "\" type=\"audio/mpeg\">";
+                audio.innerHTML = "<source src=\"" + song.url + "\" type=\"audio/mpeg\">";
                 audio.play();
+            }
+
+            function requestStartSong() {
+                console.log("start song");
+                fetch("/songs/start", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + localStorage.getItem("access-token")
+                        },
+                        body: JSON.stringify({songId: currentSong.id})
+                    }).then (async (resp) => {
+                        if (resp.status == 200) {
+                            console.log("Started song");
+                            currentSong.historyId = (await resp.json()).id;
+                            console.log(currentSong);
+                        } else {
+                            console.log("Error");
+                        }
+                    })
+            }
+
+            function requestEndSong(historyId) {
+                console.log("end song");
+                fetch("/songs/end", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + localStorage.getItem("access-token")
+                        },
+                        body: JSON.stringify({historyId})
+                    });
             }
 
             function buildSongTile(songData, parent) {
                 const songTile = document.createElement("div");
                 songTile.classList.add("songTile");
                 songTile.onclick = function() {
-                    playSong(songData.url);
+                    playSong(songData);
                 }
                 songTile.innerHTML = `
                     <div class="songTileImage">
@@ -218,14 +348,94 @@
                 parent.appendChild(songTile);
             }
 
-            function activateSearchState() {
-                document.getElementById("searchResults").classList.remove("hidden");
-                document.getElementById("defaultState").classList.add("hidden");
+            function buildUserTiles(users, parent, isConnected) {
+                const rowCount = 7;
+                var currentCount = 0;
+                var newRow = null;
+                for (const user of users) {
+                    if (currentCount % rowCount == 0) {
+                        if (newRow != null) {
+                            parent.appendChild(newRow);
+                        }
+                        newRow = document.createElement("div");
+                        newRow.classList.add("userRow");
+                    }
+                    buildUserTile(user, newRow, isConnected);
+                    currentCount += 1;
+                }
+                if (newRow != null) {
+                    while(currentCount % rowCount != 0) {
+                        x = document.createElement("div")
+                        x.classList.add("userTile");
+                        newRow.appendChild(x);
+                        currentCount += 1;
+                    }
+                    parent.appendChild(newRow);
+                }
             }
 
-            function deactivateSearchState() {
-                document.getElementById("searchResults").classList.add("hidden");
-                document.getElementById("defaultState").classList.remove("hidden");
+            function buildUserTile(user, parent, isConnected) {
+                const imgUrl = "/images/avatar.png";
+                const userTile = document.createElement("div");
+                userTile.id = "user-" + user.id;
+                userTile.classList.add("userTile");
+                if (isConnected) {
+                    action = `<button onclick=\'removeConnection(${user.id})\'>Remove</button>`
+                } else {
+                    action = `<button onclick=\'connectUser(${user.id})\'>Connect</button>`
+                }
+                userTile.innerHTML = `
+                    <div class="userTileImage">
+                        <img src="${imgUrl}" alt="${user.name}"/>
+                    </div>
+                    <div class="userTileBody">
+                        <p>${user.name}</p>
+                        ${action}
+                    </div>
+                `;
+                parent.appendChild(userTile);
+            }
+
+            function connectUser(user_id) {
+                fetch(
+                    "/connect", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + localStorage.getItem("access-token")
+                        },
+                        body: JSON.stringify({user_id})
+                }).then((resp) => {
+                    if (resp.status == 200) {
+                        requestUser();
+                    }
+                })
+            }
+
+            function removeConnection(user_id) {
+                fetch(
+                    "/connect", {
+                        method: "DELETE",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + localStorage.getItem("access-token")
+                        },
+                        body: JSON.stringify({user_id})
+                }).then((resp) => {
+                    if (resp.status == 200) {
+                        requestUser();
+                    }
+                })
+            }
+
+            function viewSearchState() {
+                document.getElementById("headerResults").classList.remove("hidden");
+                document.getElementById("headerResults").classList.remove("deactiveBtn");
+                document.getElementById("headerHome").classList.add("deactiveBtn");
+                document.getElementById("headerUser").classList.add("deactiveBtn");
+                document.getElementById("searchResults").classList.remove("hidden");
+                document.getElementById("defaultState").classList.add("hidden");
+                document.getElementById("userState").classList.add("hidden");
             }
 
             function search() {
@@ -235,7 +445,7 @@
                 xhr.onload = function(event) {
                     const resp = JSON.parse(xhr.response);
                     buildSongsList(resp, document.getElementById("searchResults"));
-                    activateSearchState();
+                    viewSearchState();
                 };
                 xhr.send()
             }
@@ -244,7 +454,10 @@
                 document.getElementById("userState").classList.remove("hidden");
                 document.getElementById("defaultState").classList.add("hidden");
                 document.getElementById("headerHome").classList.add("deactiveBtn");
+                document.getElementById("headerResults").classList.add("deactiveBtn");
+                document.getElementById("headerResults").classList.add("hidden");
                 document.getElementById("headerUser").classList.remove("deactiveBtn");
+                document.getElementById("searchResults").classList.add("hidden");
                 document.getElementById("headerHome").onclick = () => viewDefaultState();
             }
 
@@ -252,7 +465,10 @@
                 document.getElementById("userState").classList.add("hidden");
                 document.getElementById("defaultState").classList.remove("hidden");
                 document.getElementById("headerHome").classList.remove("deactiveBtn");
+                document.getElementById("headerResults").classList.add("deactiveBtn");
+                document.getElementById("headerResults").classList.add("hidden");
                 document.getElementById("headerUser").classList.add("deactiveBtn");
+                document.getElementById("searchResults").classList.add("hidden");
             }
         </script>
     </body>

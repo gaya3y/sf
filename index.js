@@ -39,6 +39,49 @@ app.get('/songs/recommendations', async (req, res) => {
   })).text())
 })
 
+app.get("/songs/favorite", async (req, res) => {
+  fetch(`${API_BASE}/songs/favorite`, {
+    method: 'GET',
+    headers: req.headers
+  }).then(async response => {
+    if (response.status === 200) {
+      res.send(await response.text())
+    } else {
+      res.status(response.status).send(JSON.stringify({"error": await response.json()}))
+    }
+  })
+})
+
+app.post("/songs/start", async (req, res) => {
+  console.log(req.body);
+  fetch(`${API_BASE}/history`, {
+    method: "POST",
+    headers: req.headers,
+    body: req.body.songId
+  }).then(async response => {
+    if (response.status === 200) {
+      res.send(await response.text())
+    } else {
+      res.status(response.status).send(JSON.stringify({"error": await response.json()}))
+    }
+  })
+})
+
+app.post("/songs/end", async (req, res) => {
+  console.log(req.body.historyId);
+  fetch(`${API_BASE}/history/${req.body.historyId}`, {
+    method: "PATCH",
+    headers: req.headers,
+  }).then(async response => {
+    if (response.status === 200) {
+      res.send(await response.text())
+    } else {
+      res.status(response.status).send(JSON.stringify({"error": await response.json()}))
+    }
+  })
+})
+
+
 app.get('/users/recommendations', async (req, res) => {
   res.send(await(await fetch(`${API_BASE}/users/recommendations`, {
     method: 'GET',
@@ -46,7 +89,7 @@ app.get('/users/recommendations', async (req, res) => {
       'Content-Type': 'application/json',
       'Authorization': req.headers.authorization
     }
-  })).text())
+  })).json())
 })
 
 app.get('/login', (req, res) => {
@@ -67,8 +110,47 @@ app.post('/login', async (req, res) => {
   if (serverResp.status == 200) {
     res.send(await serverResp.text())
   } else {
-    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.text()}))
+    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
   }
+})
+
+app.get("/me", (req, res) => {
+  fetch(API_BASE + "/users/me", {
+    method: "GET",
+    headers: req.headers
+  }).then(async serverResp => {
+    if (serverResp.status == 200) {
+      res.send(await serverResp.text())
+    } else {
+      res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+    }
+  })
+})
+
+app.post("/connect", async (req, res) => {
+  fetch(API_BASE + `/users/connect/${req.body.user_id}`, {
+    method: "POST",
+    headers: req.headers
+  }).then(async resp => {
+    if (resp.status == 200) {
+      res.send(await resp.text())
+    } else {
+      res.status(resp.status).send(JSON.stringify({"error": await resp.json()}));
+    }
+  })
+})
+
+app.delete("/connect", async (req, res) => {
+  fetch(API_BASE + `/users/connect/${req.body.user_id}`, {
+    method: "DELETE",
+    headers: req.headers
+  }).then(async resp => {
+    if (resp.status == 200) {
+      res.send(await resp.text())
+    } else {
+      res.status(resp.status).send(JSON.stringify({"error": await resp.json()}));
+    }
+  })
 })
 
 app.listen(port, () => {
