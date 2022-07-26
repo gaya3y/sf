@@ -47,7 +47,7 @@ app.get("/songs/favorite", async (req, res) => {
   if (serverResp.status === 200) {
     res.send(await serverResp.text())
   } else {
-    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+    res.status(serverResp.status).send({"error": await serverResp.text()})
   }
 })
 
@@ -61,7 +61,7 @@ app.post("/songs/start", async (req, res) => {
   if (serverResp.status === 200) {
     res.send(await serverResp.text())
   } else {
-    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+    res.status(serverResp.status).send({"error": await serverResp.text()})
   }
 })
 
@@ -108,7 +108,7 @@ app.post('/login', async (req, res) => {
   if (serverResp.status == 200) {
     res.send(await serverResp.text())
   } else {
-    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+    res.status(serverResp.status).send({"error": await serverResp.text()})
   }
 })
 
@@ -120,7 +120,7 @@ app.get("/me", async (req, res) => {
   if (serverResp.status == 200) {
     res.send(await serverResp.text())
   } else {
-    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+    res.status(serverResp.status).send({"error": await serverResp.text()})
   }
 })
 
@@ -145,7 +145,7 @@ app.delete("/connect", async (req, res) => {
   if (serverResp.status == 200) {
     res.send(await serverResp.text())
   } else {
-    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}));
+    res.status(serverResp.status).send({"error": await serverResp.text()});
   }
 })
 
