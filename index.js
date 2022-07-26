@@ -40,31 +40,29 @@ app.get('/songs/recommendations', async (req, res) => {
 })
 
 app.get("/songs/favorite", async (req, res) => {
-  fetch(`${API_BASE}/songs/favorite`, {
+  const serverResp = await fetch(`${API_BASE}/songs/favorite`, {
     method: 'GET',
     headers: req.headers
-  }).then(async response => {
-    if (response.status === 200) {
-      res.send(await response.text())
-    } else {
-      res.status(response.status).send(JSON.stringify({"error": await response.json()}))
-    }
   })
+  if (serverResp.status === 200) {
+    res.send(await serverResp.text())
+  } else {
+    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+  }
 })
 
 app.post("/songs/start", async (req, res) => {
   console.log(req.body);
-  fetch(`${API_BASE}/history`, {
+  const serverResp = await fetch(`${API_BASE}/history`, {
     method: "POST",
     headers: req.headers,
     body: req.body.songId
-  }).then(async response => {
-    if (response.status === 200) {
-      res.send(await response.text())
-    } else {
-      res.status(response.status).send(JSON.stringify({"error": await response.json()}))
-    }
   })
+  if (serverResp.status === 200) {
+    res.send(await serverResp.text())
+  } else {
+    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+  }
 })
 
 app.post("/songs/end", async (req, res) => {
@@ -114,17 +112,16 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.get("/me", (req, res) => {
-  fetch(API_BASE + "/users/me", {
+app.get("/me", async (req, res) => {
+  const serverResp = await fetch(API_BASE + "/users/me", {
     method: "GET",
     headers: req.headers
-  }).then(async serverResp => {
-    if (serverResp.status == 200) {
-      res.send(await serverResp.text())
-    } else {
-      res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
-    }
-  })
+  });
+  if (serverResp.status == 200) {
+    res.send(await serverResp.text())
+  } else {
+    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}))
+  }
 })
 
 app.post("/connect", async (req, res) => {
@@ -141,16 +138,15 @@ app.post("/connect", async (req, res) => {
 })
 
 app.delete("/connect", async (req, res) => {
-  fetch(API_BASE + `/users/connect/${req.body.user_id}`, {
+  const serverResp = await fetch(API_BASE + `/users/connect/${req.body.user_id}`, {
     method: "DELETE",
     headers: req.headers
-  }).then(async resp => {
-    if (resp.status == 200) {
-      res.send(await resp.text())
-    } else {
-      res.status(resp.status).send(JSON.stringify({"error": await resp.json()}));
-    }
   })
+  if (serverResp.status == 200) {
+    res.send(await serverResp.text())
+  } else {
+    res.status(serverResp.status).send(JSON.stringify({"error": await serverResp.json()}));
+  }
 })
 
 app.listen(port, () => {

@@ -167,9 +167,8 @@
 
             function requestUser() {
                 fetch("/me", {
-                    headers: {
-                        "Authorization": "Bearer " + localStorage.getItem("access-token")
-                    }
+                    headers: {"Authorization": "Bearer " + localStorage.getItem("access-token")},
+                    
                 }).then(async (response) => {
                     if (response.status == 200) {
                         currentUser = await response.json();
